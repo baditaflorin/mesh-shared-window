@@ -24,7 +24,7 @@ Defaults tuned for ambient use:
 
 - ~24 KB/s per phone uplink. Phones can run this for hours.
 - The pixelated `image-rendering: pixelated` CSS gives a Polaroid-y quality to the frames; we don't fight it.
-- No audio — explicitly out of scope. This is a *view*-sharing app, not a video call.
+- No audio — explicitly out of scope. This is a _view_-sharing app, not a video call.
 
 ## Alternatives considered
 

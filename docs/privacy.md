@@ -5,7 +5,7 @@
 - Your camera, as a JPEG ~4 times per second.
 - Your tile label (you choose it).
 
-That's the entire feature — sharing what your camera sees is the point. Pick a *quiet* view (window, candle, garden) and only share with people who picked the same Room ID.
+That's the entire feature — sharing what your camera sees is the point. Pick a _quiet_ view (window, candle, garden) and only share with people who picked the same Room ID.
 
 ## Room IDs are not access control
 
