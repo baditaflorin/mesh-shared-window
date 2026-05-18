@@ -1,6 +1,9 @@
 export const appConfig = {
   appName: "mesh-shared-window",
   storagePrefix: "mesh-shared-window",
+  description:
+    "Peer-to-peer mesh: 2-4 friends in different homes each point their camera at a view they like; every phone tiles all the others' feeds into one composite.",
+  accentHex: "#5fb0ff",
   version: __APP_VERSION__,
   commit: __GIT_COMMIT__,
   repositoryUrl: "https://github.com/baditaflorin/mesh-shared-window",

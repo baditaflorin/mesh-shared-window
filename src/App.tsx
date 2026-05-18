@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
+import { MeshShell } from "@baditaflorin/mesh-common";
 import { SharedWindow } from "./features/window/SharedWindow";
-import { SettingsDrawer } from "./features/settings/SettingsDrawer";
+import { SettingsExtras } from "./features/settings/SettingsExtras";
 import { appConfig } from "./shared/config";
-import { InviteShareButton, MeshBeacon } from "@baditaflorin/mesh-common";
 
 const STORAGE = {
   room: `${appConfig.storagePrefix}:room`,
@@ -31,7 +31,6 @@ export function App() {
     const v = localStorage.getItem(STORAGE.facing);
     return v === "user" || v === "environment" ? v : "environment";
   });
-  const [settingsOpen, setSettingsOpen] = useState(!myLabel);
 
   useEffect(() => {
     localStorage.setItem(STORAGE.room, roomId);
@@ -53,7 +52,25 @@ export function App() {
   }, [facing]);
 
   return (
-    <div className="app-root">
+    <MeshShell
+      config={appConfig}
+      roomId={roomId}
+      onRoomChange={setRoomId}
+      settingsExtras={
+        <SettingsExtras
+          myLabel={myLabel}
+          onMyLabelChange={setMyLabel}
+          fps={fps}
+          onFpsChange={setFps}
+          width={width}
+          onWidthChange={setWidth}
+          quality={quality}
+          onQualityChange={setQuality}
+          facing={facing}
+          onFacingChange={setFacing}
+        />
+      }
+    >
       <SharedWindow
         roomId={roomId}
         myLabel={myLabel || "Anonymous"}
@@ -62,49 +79,6 @@ export function App() {
         quality={quality}
         facingMode={facing}
       />
-
-      <InviteShareButton appName={appConfig.appName} roomId={roomId} />
-      <MeshBeacon app={appConfig.appName} room={roomId} />
-
-      <button
-        type="button"
-        className="settings-fab"
-        onClick={() => setSettingsOpen(true)}
-        aria-label="Open settings"
-      >
-        ⚙
-      </button>
-
-      <div className="self-ref">
-        <a href={appConfig.repositoryUrl} target="_blank" rel="noreferrer">
-          source
-        </a>
-        <span aria-hidden="true">·</span>
-        <a href={appConfig.paypalUrl} target="_blank" rel="noreferrer">
-          tip ♥
-        </a>
-        <span aria-hidden="true">·</span>
-        <span>
-          v{appConfig.version} · {appConfig.commit}
-        </span>
-      </div>
-
-      <SettingsDrawer
-        open={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-        roomId={roomId}
-        onRoomChange={setRoomId}
-        myLabel={myLabel}
-        onMyLabelChange={setMyLabel}
-        fps={fps}
-        onFpsChange={setFps}
-        width={width}
-        onWidthChange={setWidth}
-        quality={quality}
-        onQualityChange={setQuality}
-        facing={facing}
-        onFacingChange={setFacing}
-      />
-    </div>
+    </MeshShell>
   );
 }
