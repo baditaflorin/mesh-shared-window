@@ -1,6 +1,6 @@
 {
   "name": "mesh-shared-window",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Peer-to-peer mesh: 2-4 friends in different homes each point their camera at a view they like; every phone tiles all the others' feeds into one composite.",
   "type": "module",
   "private": false,
@@ -37,6 +37,7 @@
     "@baditaflorin/mesh-common": "file:../mesh-common"
   },
   "devDependencies": {
+    "@types/node": "^22.10.0",
     "@types/react": "^19.2.6",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
