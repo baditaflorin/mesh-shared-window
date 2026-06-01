@@ -13,7 +13,7 @@ type Awareness = {
   off: (event: string, cb: () => void) => void;
 };
 
-type Tile = { id: number; label: string; frame: string | undefined };
+type Tile = { id: number; label: string; frame: string | undefined; isSelf: boolean };
 
 type Props = {
   roomId: string;
@@ -79,13 +79,14 @@ export function SharedWindow({ roomId, myLabel, fps, width, quality, facingMode 
   useEffect(() => {
     if (!mesh?.provider) return undefined;
     const awareness = (mesh.provider as unknown as { awareness: Awareness }).awareness;
+    const selfId = awareness.clientID;
     const refresh = () => {
       const states = awareness.getStates();
       const arr: Tile[] = [];
       states.forEach((state, id) => {
         const w = state["window"] as AwarenessState | undefined;
         if (!w) return;
-        arr.push({ id, label: w.label ?? "", frame: w.frame });
+        arr.push({ id, label: w.label ?? "", frame: w.frame, isSelf: id === selfId });
       });
       arr.sort((a, b) => (a.label || "").localeCompare(b.label || ""));
       setTiles(arr);
@@ -132,13 +133,16 @@ export function SharedWindow({ roomId, myLabel, fps, width, quality, facingMode 
         }
       >
         {tiles.map((tile) => (
-          <div className="window-tile" key={tile.id}>
+          <div className={`window-tile${tile.isSelf ? " window-tile-self" : ""}`} key={tile.id}>
             {tile.frame ? (
               <img className="window-frame" src={tile.frame} alt="" />
             ) : (
               <div className="window-tile-empty">opening…</div>
             )}
-            <div className="window-tile-label">{tile.label || "untitled"}</div>
+            <div className="window-tile-label">
+              {tile.label || "untitled"}
+              {tile.isSelf && <span className="window-tile-you"> · you</span>}
+            </div>
           </div>
         ))}
       </div>

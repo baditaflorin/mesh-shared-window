@@ -79,6 +79,15 @@ test("each peer's labelled tile appears in the other peer's collage", async ({
     // Each peer's collage holds at least the two peers' tiles.
     await expect(b.locator(".window-hud")).toContainText(/[2-9]\d* tiles/);
     await expect(a.locator(".window-hud")).toContainText(/[2-9]\d* tiles/);
+
+    // Each peer can tell which tile is its OWN: the local peer's tile (and only
+    // it) is marked "· you" and outlined. This proves the collage distinguishes
+    // self from peers via the local awareness clientID — so a viewer never
+    // confuses their own rear-camera view for a friend's.
+    await expect(a.locator(".window-tile-self .window-tile-you")).toHaveCount(1);
+    await expect(a.locator(".window-tile-self .window-tile-label")).toContainText(labelA);
+    await expect(b.locator(".window-tile-self .window-tile-you")).toHaveCount(1);
+    await expect(b.locator(".window-tile-self .window-tile-label")).toContainText(labelB);
   } finally {
     await cleanup();
   }
