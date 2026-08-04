@@ -47,17 +47,25 @@ export function SharedWindow({ roomId, myLabel, fps, width, quality, facingMode 
     };
   }, [mesh]);
 
+  // Kept in a ref (not a dependency) so the frame-publish callback below
+  // always sees the latest label without needing to reopen the camera when
+  // the label changes — see the label-sync effect further down.
+  const myLabelRef = useRef(myLabel);
+  useEffect(() => {
+    myLabelRef.current = myLabel;
+  }, [myLabel]);
+
   useEffect(() => {
     if (!armed || !mesh?.provider) return undefined;
     let cancelled = false;
     const awareness = (mesh.provider as unknown as { awareness: Awareness }).awareness;
-    awareness.setLocalStateField("window", { label: myLabel, frame: undefined });
+    awareness.setLocalStateField("window", { label: myLabelRef.current, frame: undefined });
 
     void (async () => {
       try {
         const h = await startFrameStream(fps, width, quality, facingMode, (dataUrl) => {
           if (cancelled) return;
-          awareness.setLocalStateField("window", { label: myLabel, frame: dataUrl });
+          awareness.setLocalStateField("window", { label: myLabelRef.current, frame: dataUrl });
         });
         if (cancelled) {
           h.stop();
@@ -74,7 +82,26 @@ export function SharedWindow({ roomId, myLabel, fps, width, quality, facingMode 
       handleRef.current?.stop();
       handleRef.current = null;
     };
-  }, [armed, mesh, myLabel, fps, width, quality, facingMode]);
+    // myLabel is intentionally excluded: it must not tear down and reopen
+    // the camera (see the label-sync effect below, which is what actually
+    // reacts to label edits).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [armed, mesh, fps, width, quality, facingMode]);
+
+  // Publish label edits into awareness immediately, without touching the
+  // camera. Previously this lived in the effect above (keyed on `myLabel`),
+  // so every keystroke in the "Your tile label" field tore down the active
+  // MediaStream and called getUserMedia() again — flashing the tile to
+  // "opening…" for every peer and hammering the camera hardware while
+  // typing. Preserve whatever frame is already published for this peer.
+  useEffect(() => {
+    if (!armed || !mesh?.provider) return;
+    const awareness = (mesh.provider as unknown as { awareness: Awareness }).awareness;
+    const current = awareness.getStates().get(awareness.clientID) as
+      | { window?: AwarenessState }
+      | undefined;
+    awareness.setLocalStateField("window", { label: myLabel, frame: current?.window?.frame });
+  }, [armed, mesh, myLabel]);
 
   useEffect(() => {
     if (!mesh?.provider) return undefined;
@@ -84,11 +111,21 @@ export function SharedWindow({ roomId, myLabel, fps, width, quality, facingMode 
       const states = awareness.getStates();
       const arr: Tile[] = [];
       states.forEach((state, id) => {
-        const w = state["window"] as AwarenessState | undefined;
-        if (!w) return;
-        arr.push({ id, label: w.label ?? "", frame: w.frame, isSelf: id === selfId });
+        const w = state["window"] as Record<string, unknown> | undefined;
+        if (!w || typeof w !== "object") return;
+        // Awareness state is attacker-controlled: any peer who knows the
+        // room ID (no auth — see docs/privacy.md) can publish arbitrary
+        // JSON, e.g. `{ label: { evil: true } }`. Without these guards a
+        // non-string `label` throws inside `.localeCompare()` below, and a
+        // non-string `frame` gets handed straight to `<img src>` — both
+        // during every peer's render, so one malformed peer freezes the
+        // whole room's tile grid. Coerce to the expected shape instead of
+        // trusting the wire.
+        const label = typeof w.label === "string" ? w.label : "";
+        const frame = typeof w.frame === "string" ? w.frame : undefined;
+        arr.push({ id, label, frame, isSelf: id === selfId });
       });
-      arr.sort((a, b) => (a.label || "").localeCompare(b.label || ""));
+      arr.sort((a, b) => a.label.localeCompare(b.label));
       setTiles(arr);
     };
     awareness.on("change", refresh);
