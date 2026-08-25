@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { openTwoPeers } from "@baditaflorin/mesh-common/testing";
 import { readFileSync } from "node:fs";
 
@@ -16,17 +16,40 @@ const storagePrefix = pkg.name;
  * value actually published to Yjs awareness, so each peer keeps its own label
  * regardless of the shared storage. This mirrors reality, where two devices
  * have separate localStorage. */
+function settingsDialog(page: Page): Locator {
+  return page.getByRole("dialog", { name: "Settings" });
+}
+
+function legacySettingsDrawer(page: Page): Locator {
+  return page.locator(".mesh-settings-drawer, .settings-drawer").first();
+}
+
+async function isVisible(locator: Locator): Promise<boolean> {
+  return locator.isVisible().catch(() => false);
+}
+
+async function closeSettings(page: Page): Promise<void> {
+  const dialog = settingsDialog(page);
+  if (await isVisible(dialog)) {
+    await dialog.getByRole("button", { name: "close" }).click();
+    await expect(dialog).toBeHidden();
+    return;
+  }
+
+  const drawer = legacySettingsDrawer(page);
+  await drawer.getByRole("button", { name: "Close" }).click();
+  await expect(drawer).toHaveCount(0);
+}
+
 async function setLabel(page: Page, label: string): Promise<void> {
-  const drawer = page.locator(".mesh-settings-drawer, .settings-drawer");
-  if ((await drawer.count()) === 0) {
+  if (!(await isVisible(settingsDialog(page))) && !(await isVisible(legacySettingsDrawer(page)))) {
     await page.getByLabel("Open settings").click();
   }
   const input = page.locator("label", { hasText: /your tile label/i }).locator("input");
   await input.fill(label);
-  // Close the drawer so its backdrop no longer intercepts clicks on the
+  // Close Settings so its backdrop no longer intercepts clicks on the
   // "Open camera & join" arm button behind it.
-  await drawer.getByRole("button", { name: "Close" }).click();
-  await expect(drawer).toHaveCount(0);
+  await closeSettings(page);
 }
 
 /**
