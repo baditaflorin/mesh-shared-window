@@ -1,4 +1,25 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
+
+function settingsDialog(page: Page): Locator {
+  return page.getByRole("dialog", { name: "Settings" });
+}
+
+function legacySettingsDrawer(page: Page): Locator {
+  return page.locator(".mesh-settings-drawer, .settings-drawer").first();
+}
+
+async function closeSettings(page: Page): Promise<void> {
+  const dialog = settingsDialog(page);
+  if (await dialog.isVisible().catch(() => false)) {
+    await dialog.getByRole("button", { name: "close" }).click();
+    await expect(dialog).toBeHidden();
+    return;
+  }
+
+  const drawer = legacySettingsDrawer(page);
+  await drawer.getByRole("button", { name: "Close" }).click();
+  await expect(drawer).toHaveCount(0);
+}
 
 /**
  * Regression test for a bug found in the 2026-08 TRL re-audit: editing the
@@ -26,10 +47,7 @@ test("editing the tile label after joining does not re-request the camera", asyn
   await page.getByLabel("Open settings").click();
   const label = page.locator("label", { hasText: /your tile label/i }).locator("input");
   await label.fill("A");
-  await page
-    .locator(".mesh-settings-drawer, .settings-drawer")
-    .getByRole("button", { name: "Close" })
-    .click();
+  await closeSettings(page);
 
   await page.locator("button.window-arm-button").click();
   await page.waitForTimeout(300);
@@ -51,10 +69,7 @@ test("editing the tile label after joining does not re-request the camera", asyn
   expect(afterTyping).toBe(afterJoin);
 
   // The label change must still reach the peer's own tile.
-  await page
-    .locator(".mesh-settings-drawer, .settings-drawer")
-    .getByRole("button", { name: "Close" })
-    .click();
+  await closeSettings(page);
   await expect(page.locator(".window-tile-self .window-tile-label")).toContainText(
     "Alice Window View",
   );
